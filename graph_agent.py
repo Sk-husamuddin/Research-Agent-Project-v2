@@ -10,34 +10,60 @@ from agent_core import client, MODEL_NAME, tools, TOOL_MAP
 load_dotenv()
 
 
+def simple_add(left: list, right: list) -> list:
+    return left + right
+
+
 class AgentState(TypedDict):
-    messages: Annotated[list, add_messages]
+    messages: Annotated[list, simple_add]
 
 
 def call_model(state: AgentState) -> dict:
+    openai_messages = []
+    for msg in state["messages"]:
+        if hasattr(msg, "type"):
+            role_map = {"human": "user", "ai": "assistant", "system": "system", "tool": "tool"}
+            openai_messages.append({"role": role_map.get(msg.type, msg.type), "content": msg.content})
+        else:
+            openai_messages.append(msg)
+
     response = client.chat.completions.create(
         model=MODEL_NAME,
-        messages=state["messages"],
+        messages=openai_messages,
         tools=tools,
         tool_choice="auto"
     )
     response_message = response.choices[0].message
-    return {"messages": [response_message]}
 
+    assistant_message = {
+        "role": "assistant",
+        "content": response_message.content,
+        "tool_calls": [
+            {
+                "id": tc.id,
+                "type": "function",
+                "function": {"name": tc.function.name, "arguments": tc.function.arguments}
+            }
+            for tc in response_message.tool_calls
+        ] if response_message.tool_calls else None
+    }
+
+    return {"messages": [assistant_message]}
 def execute_tools(state: AgentState) -> dict:
     last_message = state["messages"][-1]
+    tool_calls = last_message["tool_calls"]
     tool_messages = []
 
-    for tool_call in last_message.tool_calls:
-        tool_name = tool_call.function.name
-        tool_args = json.loads(tool_call.function.arguments)
+    for tool_call in tool_calls:
+        tool_name = tool_call["function"]["name"]
+        tool_args = json.loads(tool_call["function"]["arguments"])
 
         handler = TOOL_MAP.get(tool_name)
         result = handler(tool_args) if handler else "Tool not found"
 
         tool_messages.append({
             "role": "tool",
-            "tool_call_id": tool_call.id,
+            "tool_call_id": tool_call["id"],
             "content": str(result)
         })
 
@@ -45,7 +71,8 @@ def execute_tools(state: AgentState) -> dict:
 
 def should_continue(state: AgentState) -> str:
     last_message = state["messages"][-1]
-    if last_message.tool_calls:
+    tool_calls = last_message.tool_calls if hasattr(last_message, "tool_calls") else last_message.get("tool_calls")
+    if tool_calls:
         return "execute_tools"
     return "END"
 
@@ -69,3 +96,28 @@ graph.add_conditional_edges(
 graph.add_edge("execute_tools", "call_model")
 
 graph_app = graph.compile()
+
+if __name__ == "__main__":
+    initial_state = {
+        "messages": [
+            {"role": "system", "content": "You are a helpful research assistant with access to two tools: search_web and calculate. Always search for facts before calculating."},
+            {"role": "user", "content": "What is the population of India?"}
+        ]
+    }
+
+    result = graph_app.invoke(initial_state)
+
+    print("FINAL MESSAGES:")
+    for msg in result["messages"]:
+        print(msg)
+    follow_up_state = {
+        "messages": result["messages"] + [
+            {"role": "user", "content": "Double that number."}
+        ]
+    }
+
+    result2 = graph_app.invoke(follow_up_state)
+
+    print("\n=== SECOND RESULT ===")
+    for msg in result2["messages"]:
+        print(msg)
