@@ -41,3 +41,9 @@ def execute_tools(state: AgentState) -> dict:
         })
 
     return {"messages": tool_messages}
+
+def should_continue(state: AgentState) -> str:
+    last_message = state["messages"][-1]
+    if last_message.tool_calls:
+        return "execute_tools"
+    return "END"
