@@ -68,4 +68,4 @@ graph.add_conditional_edges(
 
 graph.add_edge("execute_tools", "call_model")
 
-app = graph.compile()
+graph_app = graph.compile()
