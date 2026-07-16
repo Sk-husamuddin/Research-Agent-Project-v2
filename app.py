@@ -1,9 +1,11 @@
+import uuid
 from pydantic import BaseModel
 from typing import Optional
 from fastapi import FastAPI
 from agent_core import run_react_loop
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException
+from graph_agent import graph_app
 
 
 app = FastAPI()
@@ -36,10 +38,24 @@ def message():
 
 @app.post("/query",response_model=QueryResponse)
 
-def query_agent(request:QueryRequest):
-    try:
-        result = run_react_loop(query=request.query, session_id=request.session_id)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500,detail=f"Agent failed:{str(e)}")
 
+def query_agent_v2(request: QueryRequest):
+    try:
+        thread_id = request.session_id or str(uuid.uuid4())
+        config = {"configurable": {"thread_id": thread_id}}
+
+        result = graph_app.invoke(
+            {"messages": [{"role": "user", "content": request.query}]},
+            config=config
+        )
+
+        last_message = result["messages"][-1]
+        final_answer = last_message["content"] if isinstance(last_message, dict) else last_message.content
+
+        return {
+            "session_id": thread_id,
+            "answer": final_answer,
+            "status": "success"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Agent failed: {str(e)}")
