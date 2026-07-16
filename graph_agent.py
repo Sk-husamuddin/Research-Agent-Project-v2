@@ -5,6 +5,7 @@ from openai import OpenAI
 from typing import TypedDict, Annotated
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
 from agent_core import client, MODEL_NAME, tools, TOOL_MAP
 
 load_dotenv()
@@ -49,6 +50,7 @@ def call_model(state: AgentState) -> dict:
     }
 
     return {"messages": [assistant_message]}
+
 def execute_tools(state: AgentState) -> dict:
     last_message = state["messages"][-1]
     tool_calls = last_message["tool_calls"]
@@ -95,9 +97,12 @@ graph.add_conditional_edges(
 
 graph.add_edge("execute_tools", "call_model")
 
-graph_app = graph.compile()
+checkpointer = MemorySaver()
+graph_app = graph.compile(checkpointer=checkpointer)
 
 if __name__ == "__main__":
+    config = {"configurable":{"thread_id":"test-thread-1"}}
+
     initial_state = {
         "messages": [
             {"role": "system", "content": "You are a helpful research assistant with access to two tools: search_web and calculate. Always search for facts before calculating."},
@@ -105,18 +110,18 @@ if __name__ == "__main__":
         ]
     }
 
-    result = graph_app.invoke(initial_state)
+    result = graph_app.invoke(initial_state,config)
 
     print("FINAL MESSAGES:")
     for msg in result["messages"]:
         print(msg)
     follow_up_state = {
-        "messages": result["messages"] + [
+        "messages": [
             {"role": "user", "content": "Double that number."}
         ]
     }
 
-    result2 = graph_app.invoke(follow_up_state)
+    result2 = graph_app.invoke(follow_up_state,config)
 
     print("\n=== SECOND RESULT ===")
     for msg in result2["messages"]:
