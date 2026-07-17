@@ -17,6 +17,32 @@ def simple_add(left: list, right: list) -> list:
 
 class AgentState(TypedDict):
     messages: Annotated[list, simple_add]
+    plan: list
+
+
+def planner(state: AgentState) -> dict:
+    user_question = state["messages"][-1]["content"]
+
+    planning_prompt = [
+        {
+            "role": "system",
+            "content": """You are a planning assistant. Break the user's question into a short, ordered list of concrete research steps needed to answer it fully. Only include steps that require searching for information or performing calculations. Do NOT answer the question yourself. Return ONLY a numbered list, nothing else."""
+        },
+        {
+            "role": "user",
+            "content": user_question
+        }
+    ]
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=planning_prompt
+    )
+
+    plan_text = response.choices[0].message.content
+    plan_steps = [line.strip() for line in plan_text.split("\n") if line.strip()]
+
+    return {"plan": plan_steps}
 
 
 def call_model(state: AgentState) -> dict:
