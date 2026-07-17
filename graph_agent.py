@@ -113,13 +113,25 @@ def should_continue(state: AgentState) -> str:
     return "END"
 
 
+def route_entry(state: AgentState) -> str:
+    if state.get("plan"):
+        return "call_model"
+    return "planner"
+
+
 graph = StateGraph(AgentState)
 
 graph.add_node("planner", planner)
 graph.add_node("call_model", call_model)
 graph.add_node("execute_tools", execute_tools)
 
-graph.set_entry_point("planner")
+graph.set_conditional_entry_point(
+    route_entry,
+    {
+        "planner": "planner",
+        "call_model": "call_model"
+    }
+)
 
 graph.add_edge("planner", "call_model")
 
@@ -135,4 +147,3 @@ graph.add_conditional_edges(
 graph.add_edge("execute_tools", "call_model")
 
 graph_app = graph.compile(checkpointer=checkpointer)
-
