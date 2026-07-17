@@ -47,7 +47,13 @@ def query_agent_v2(request: QueryRequest):
         result = graph_app.invoke(
             {"messages": [{"role": "user", "content": request.query}]},
             config=config
+
         )
+        print("=== FULL MESSAGE HISTORY ===")
+        for msg in result["messages"]:
+            print(msg)
+        print("=== PLAN ===")
+        print(result.get("plan"))
 
         last_message = result["messages"][-1]
         final_answer = last_message["content"] if isinstance(last_message, dict) else last_message.content

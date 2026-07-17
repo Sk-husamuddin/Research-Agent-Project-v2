@@ -118,7 +118,7 @@ def route_entry(state: AgentState) -> str:
         return "call_model"
     return "planner"
 
-
+checkpointer = MemorySaver()
 graph = StateGraph(AgentState)
 
 graph.add_node("planner", planner)
@@ -147,3 +147,4 @@ graph.add_conditional_edges(
 graph.add_edge("execute_tools", "call_model")
 
 graph_app = graph.compile(checkpointer=checkpointer)
+
