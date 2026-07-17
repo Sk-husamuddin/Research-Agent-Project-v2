@@ -46,13 +46,21 @@ def planner(state: AgentState) -> dict:
 
 
 def call_model(state: AgentState) -> dict:
-    openai_messages = []
-    for msg in state["messages"]:
-        if hasattr(msg, "type"):
-            role_map = {"human": "user", "ai": "assistant", "system": "system", "tool": "tool"}
-            openai_messages.append({"role": role_map.get(msg.type, msg.type), "content": msg.content})
-        else:
-            openai_messages.append(msg)
+    plan_context = "\n".join(state.get("plan", []))
+    
+    system_message = {
+        "role": "system",
+        "content": f"""You are a helpful research assistant with access to two tools: search_web and calculate. Always search for facts before calculating.
+
+Here is the research plan for this task:
+{plan_context}
+
+Follow this plan step by step, using tools as needed. Use your judgment if a step needs adjusting based on what you find."""
+    }
+
+    openai_messages = [system_message] + [
+        msg for msg in state["messages"] if msg.get("role") != "system"
+    ]
 
     response = client.chat.completions.create(
         model=MODEL_NAME,
