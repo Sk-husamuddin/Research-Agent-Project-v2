@@ -115,10 +115,13 @@ def should_continue(state: AgentState) -> str:
 
 graph = StateGraph(AgentState)
 
+graph.add_node("planner", planner)
 graph.add_node("call_model", call_model)
 graph.add_node("execute_tools", execute_tools)
 
-graph.set_entry_point("call_model")
+graph.set_entry_point("planner")
+
+graph.add_edge("planner", "call_model")
 
 graph.add_conditional_edges(
     "call_model",
@@ -131,32 +134,5 @@ graph.add_conditional_edges(
 
 graph.add_edge("execute_tools", "call_model")
 
-checkpointer = MemorySaver()
 graph_app = graph.compile(checkpointer=checkpointer)
 
-if __name__ == "__main__":
-    config = {"configurable":{"thread_id":"test-thread-1"}}
-
-    initial_state = {
-        "messages": [
-            {"role": "system", "content": "You are a helpful research assistant with access to two tools: search_web and calculate. Always search for facts before calculating."},
-            {"role": "user", "content": "What is the population of India?"}
-        ]
-    }
-
-    result = graph_app.invoke(initial_state,config)
-
-    print("FINAL MESSAGES:")
-    for msg in result["messages"]:
-        print(msg)
-    follow_up_state = {
-        "messages": [
-            {"role": "user", "content": "Double that number."}
-        ]
-    }
-
-    result2 = graph_app.invoke(follow_up_state,config)
-
-    print("\n=== SECOND RESULT ===")
-    for msg in result2["messages"]:
-        print(msg)
