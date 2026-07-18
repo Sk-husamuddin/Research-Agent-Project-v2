@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 from dotenv import load_dotenv
 from openai import OpenAI
 from typing import TypedDict, Annotated
@@ -81,7 +82,7 @@ Follow this plan step by step, using tools as needed. Use your judgment if a ste
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=openai_messages,
-        tools=tools,
+        tools=all_tools,
         tool_choice="auto"
     )
     response_message = response.choices[0].message
@@ -110,8 +111,14 @@ def execute_tools(state: AgentState) -> dict:
         tool_name = tool_call["function"]["name"]
         tool_args = json.loads(tool_call["function"]["arguments"])
 
-        handler = TOOL_MAP.get(tool_name)
-        result = handler(tool_args) if handler else "Tool not found"
+        if tool_name in TOOL_MAP:
+            handler = TOOL_MAP[tool_name]
+            result = handler(tool_args)
+        elif tool_name in mcp_tool_map:
+            mcp_tool = mcp_tool_map[tool_name]
+            result = asyncio.run(mcp_tool.ainvoke(tool_args))
+        else:
+            result = "Tool not found"
 
         tool_messages.append({
             "role": "tool",
