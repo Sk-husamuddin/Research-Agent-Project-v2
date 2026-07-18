@@ -7,8 +7,24 @@ from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from agent_core import client, MODEL_NAME, tools, TOOL_MAP
+from mcp_tools import mcp_tools_list
 
 load_dotenv()
+
+def convert_mcp_tool_to_schema(mcp_tool):
+    return {
+        "type": "function",
+        "function": {
+            "name": mcp_tool.name,
+            "description": mcp_tool.description,
+            "parameters": mcp_tool.args_schema
+        }
+    }
+
+mcp_tool_schemas = [convert_mcp_tool_to_schema(t) for t in mcp_tools_list]
+mcp_tool_map = {t.name: t for t in mcp_tools_list}
+
+all_tools = tools + mcp_tool_schemas
 
 
 def simple_add(left: list, right: list) -> list:
