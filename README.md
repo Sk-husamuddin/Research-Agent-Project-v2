@@ -189,14 +189,15 @@ This architecture means additional MCP servers (GitHub, databases, Slack, etc.) 
 
 **Request:** *"What is the population of Egypt, and how does it compare to the population of Vietnam? Which one is larger, and by what percentage?"*
 
-<img width="800" alt="Multi-step comparison query and response" src="<img width="1366" height="768" alt="Screenshot (613)" src="https://github.com/user-attachments/assets/75e49340-2d61-4491-b7c3-2d143c6c5f5b" />
-" />
-<img width="800" alt="Multi-step comparison query and response" src="<img width="1366" height="768" alt="Screenshot (614)" src="https://github.com/user-attachments/assets/bd99a84b-b0cb-4f85-9f86-512894019d98" />
-" />
+<img width="800" alt="Multi-step comparison query" src="https://github.com/user-attachments/assets/75e49340-2d61-4491-b7c3-2d143c6c5f5b" />
+
+**Response:**
+
+<img width="800" alt="Multi-step comparison response" src="https://github.com/user-attachments/assets/bd99a84b-b0cb-4f85-9f86-512894019d98" />
 
 The Planner generated a 4-step plan before any tool was called — visible in the terminal output:
-<img width="800" alt="Multi-step comparison query and response" src="<img width="1366" height="768" alt="Screenshot (615)" src="https://github.com/user-attachments/assets/56f8ac4d-815c-4c41-8f9f-670f19c55777" />
-" />
+
+<img width="800" alt="Planner output in terminal" src="https://github.com/user-attachments/assets/56f8ac4d-815c-4c41-8f9f-670f19c55777" />
 ## 14. Future Improvements
 
 - Durable checkpointing (SQLite or MongoDB-backed) — currently uses in-memory `MemorySaver`, which does not survive a server restart
