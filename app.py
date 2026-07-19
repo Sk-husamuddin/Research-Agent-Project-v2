@@ -1,4 +1,5 @@
 import uuid
+import traceback
 from pydantic import BaseModel
 from typing import Optional
 from fastapi import FastAPI
@@ -64,4 +65,5 @@ def query_agent_v2(request: QueryRequest):
             "status": "success"
         }
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Agent failed: {str(e)}")
