@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+requests
+groq
+openai
+asteval
+pymongo
+langgraph
+langchain-core
+langchain-mcp-adapters
+mcp
